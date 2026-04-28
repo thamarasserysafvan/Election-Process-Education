@@ -1,3 +1,7 @@
+# Election Process Education
+
+An interactive and easy-to-follow educational assistant that guides users through the various stages, timelines, and requirements of the election process.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -29,8 +33,29 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This application is deployed using **Google Cloud Platform (GCP)**. Specifically, it is hosted on **Google Cloud Run**, which provides a fully managed environment for containerized applications.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Deploying to Google Cloud Run
+
+To deploy this application to Google Cloud Run, follow these general steps:
+
+1.  **Build a Container Image:** Build a Docker image for the Next.js application. You can use a `Dockerfile` to define the environment and build steps.
+    ```bash
+    docker build -t gcr.io/YOUR_PROJECT_ID/election-process-education .
+    ```
+2.  **Push the Image to Container Registry:** Push the built image to Google Container Registry (GCR) or Artifact Registry.
+    ```bash
+    docker push gcr.io/YOUR_PROJECT_ID/election-process-education
+    ```
+3.  **Deploy to Cloud Run:** Deploy the container image to a Cloud Run service.
+    ```bash
+    gcloud run deploy election-process-education \
+      --image gcr.io/YOUR_PROJECT_ID/election-process-education \
+      --platform managed \
+      --region YOUR_REGION \
+      --allow-unauthenticated
+    ```
+
+Make sure you have the [Google Cloud CLI (`gcloud`)](https://cloud.google.com/sdk/docs/install) installed and configured with your GCP project. You will also need to enable the Cloud Run API for your project.

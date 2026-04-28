@@ -1,8 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import QuizCard from '@/components/QuizCard';
 
-export const revalidate = 0; // Disable caching for the quiz
-
 export default async function QuizPage() {
   const questions = await prisma.question.findMany();
 

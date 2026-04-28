@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -15,7 +16,7 @@ export default function ChatInterface() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I am your official Election Educational Assistant. Ask me anything about voter registration, EVMs, or polling procedures in India.',
+      content: 'Hello! I am your official Election Educational Assistant. To get started, **which state in India are you from?** Knowing your state helps me provide accurate upcoming election dates, registration deadlines, and candidate information.',
     }
   ]);
   const [input, setInput] = useState('');
@@ -42,7 +43,10 @@ export default function ChatInterface() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ 
+          message: userMessage.content,
+          history: messages // pass the current state of messages (which does not yet include the *current* userMessage because setMessages is async, but we can pass it as is since Gemini's sendMessage API expects previous history, not including the current message being sent)
+        }),
       });
 
       const data = await response.json();
@@ -88,8 +92,12 @@ export default function ChatInterface() {
           >
             <div className={`max-w-[80%] rounded-2xl p-4 shadow-sm flex gap-3 ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
               {msg.role === 'assistant' && <div className="mt-1 flex-shrink-0 text-blue-600"><Bot size={20} /></div>}
-              <div className="prose prose-sm prose-blue leading-relaxed">
-                {msg.content}
+              <div className="prose prose-sm prose-blue leading-relaxed max-w-none">
+                {msg.role === 'assistant' ? (
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                ) : (
+                  msg.content
+                )}
               </div>
               {msg.role === 'user' && <div className="mt-1 flex-shrink-0"><User size={20} /></div>}
             </div>

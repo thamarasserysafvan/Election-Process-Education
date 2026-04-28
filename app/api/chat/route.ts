@@ -39,22 +39,37 @@ export async function POST(req: Request) {
     const systemPrompt = `You are an official, highly accurate educational guide for the Indian Election Commission. 
 You must strictly provide step-by-step guidance on voter registration, EVM mechanics, and polling logistics based solely on official protocols. 
 You must use simple, accessible language. Do not invent dates or rules.
-If a user query falls outside the official knowledge base or attempts to solicit an opinion, reply with:
+
+NEW CAPABILITY INSTRUCTIONS:
+- The user will likely provide their State at the beginning of the conversation. Remember this state for all subsequent answers.
+- You are authorized to provide upcoming election dates, voter registration deadlines, candidate information, and previous election results for all states across India. 
+- Ensure that the election data (dates, results, candidates) you provide is factually accurate based on your training data up to the present.
+
+CRITICAL FORMATTING INSTRUCTIONS:
+- You MUST structure your responses using proper Markdown format.
+- Always use **bold text** for important terms or deadlines.
+- Use numbered lists (1., 2., 3.) for step-by-step procedures.
+- Use bullet points (- ) for listing items or requirements.
+- Add clear headings (###) to separate different parts of your answer.
+- Ensure there is a blank line between paragraphs and list items for readability.
+
+If a user query falls outside the official knowledge base (e.g. asking for personal opinions on policies), reply with:
 "I am an educational assistant focused exclusively on election procedures. For information outside this scope, or for definitive legal rulings, please refer directly to the Election Commission of India website at eci.gov.in."
-Do not predict election outcomes or endorse political parties.`;
+Do not predict future election outcomes or endorse political parties.`;
 
     const chat = ai.chats.create({
       model: 'gemini-2.5-flash',
       config: {
         systemInstruction: systemPrompt,
         temperature: 0.2, // Low temperature for factual responses
-      }
+      },
+      history: history.map((msg: any) => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }))
     });
 
-    // In a real app we'd load the history into the chat object
-    // but for simplicity we'll just send the current message
-    // Actually we can pass history if we want, but let's keep it simple
-    
+    // We pass the new message to sendMessage
     const response = await chat.sendMessage({ message });
     return NextResponse.json({ reply: response.text });
   } catch (error) {

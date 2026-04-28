@@ -90,8 +90,16 @@ You are strictly prohibited from predicting future election outcomes, analyzing 
     // We pass the new message to sendMessage
     const response = await chat.sendMessage({ message });
     return NextResponse.json({ reply: response.text });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat API Error:', error);
-    return NextResponse.json({ error: 'An error occurred while processing your request.' }, { status: 500 });
+    const message = error?.message || 'Unknown error';
+    // Surface a user-friendly but diagnostic message
+    if (message.includes('API_KEY') || message.includes('API key') || message.includes('credential')) {
+      return NextResponse.json({ error: 'API key error: Please check your GEMINI_API_KEY in Vercel environment variables.' }, { status: 500 });
+    }
+    if (message.includes('quota') || message.includes('RESOURCE_EXHAUSTED')) {
+      return NextResponse.json({ error: 'The Gemini API quota has been exceeded. Please try again later.' }, { status: 429 });
+    }
+    return NextResponse.json({ error: `Request failed: ${message}` }, { status: 500 });
   }
 }

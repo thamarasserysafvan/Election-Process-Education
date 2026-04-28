@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { message, history } = body;
+    const { message, history = [] } = body;
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -79,10 +79,12 @@ You are strictly prohibited from predicting future election outcomes, analyzing 
         systemInstruction: systemPrompt,
         temperature: 0.2, // Low temperature for factual responses
       },
-      history: history.map((msg: any) => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }))
+      history: history
+        .filter((msg: any) => msg.content && msg.content.trim() !== '')
+        .map((msg: any) => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: String(msg.content) }]
+        }))
     });
 
     // We pass the new message to sendMessage

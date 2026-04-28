@@ -162,7 +162,7 @@ export default function QuizCard({ questions }: { questions: Question[] }) {
                 disabled={isAnswered}
                 className={buttonClass}
               >
-                <span className="font-medium text-lg">{optionText}</span>
+                <span className="font-medium text-lg text-black">{optionText}</span>
                 {isCorrect && <CheckCircle2 className="text-green-500" size={24} />}
                 {isWrong && <XCircle className="text-red-500" size={24} />}
               </button>
@@ -179,8 +179,8 @@ export default function QuizCard({ questions }: { questions: Question[] }) {
               className="overflow-hidden"
             >
               <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-100">
-                <h4 className="font-semibold text-gray-900 mb-2">Explanation</h4>
-                <p className="text-gray-700">{currentQuestion.rationale}</p>
+                <h4 className="font-semibold text-black mb-2">Explanation</h4>
+                <p className="text-black">{currentQuestion.rationale}</p>
               </div>
               
               <button

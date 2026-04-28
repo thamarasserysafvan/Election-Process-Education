@@ -126,7 +126,7 @@ export default function ChatInterface() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about voter registration..."
-            className="flex-1 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-500 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            className="flex-1 rounded-xl border-2 border-gray-300 bg-white text-black placeholder-gray-600 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-medium"
           />
           <button
             onClick={handleSend}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Process Guide Assistant</title>
+    <meta name="description" content="An interactive assistant to help you understand the election process, timelines, and voting steps.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-check-to-slot"></i>
+                <span>VoteAssist</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-target="assistant"><i class="fa-solid fa-robot"></i> Assistant</li>
+                <li data-target="timeline"><i class="fa-solid fa-calendar-days"></i> Timeline</li>
+                <li data-target="guide"><i class="fa-solid fa-list-ol"></i> Step-by-Step Guide</li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Assistant Section -->
+            <section id="assistant" class="content-section active">
+                <div class="header">
+                    <h1>Election Assistant</h1>
+                    <p>Ask questions or explore popular topics about the election process.</p>
+                </div>
+                
+                <div class="chat-container">
+                    <div class="chat-history" id="chat-history">
+                        <div class="message bot">
+                            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                            <div class="message-content">
+                                Hello! I'm your Election Assistant. How can I help you today? You can type a question below or choose from one of the common topics.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="suggested-questions" id="suggested-questions">
+                        <button class="suggestion-btn">How do I register to vote?</button>
+                        <button class="suggestion-btn">What are the key dates?</button>
+                        <button class="suggestion-btn">How does mail-in voting work?</button>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Type your question here..." autocomplete="off">
+                        <button id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Timeline Section -->
+            <section id="timeline" class="content-section">
+                <div class="header">
+                    <h1>Election Timeline</h1>
+                    <p>Key dates and deadlines for the upcoming election.</p>
+                </div>
+                
+                <div class="timeline-container">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">September 1</div>
+                        <div class="timeline-content-card">
+                            <h3>Voter Registration Opens</h3>
+                            <p>Check your eligibility and register to vote online or by mail.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">October 15</div>
+                        <div class="timeline-content-card">
+                            <h3>Registration Deadline</h3>
+                            <p>Last day to register to vote for the upcoming general election.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">October 20</div>
+                        <div class="timeline-content-card">
+                            <h3>Early Voting Begins</h3>
+                            <p>Polling places open for early in-person voting.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">November 5</div>
+                        <div class="timeline-content-card highlight">
+                            <h3>Election Day</h3>
+                            <p>Polls are open from 7:00 AM to 8:00 PM. Mail-in ballots must be postmarked by today.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Guide Section -->
+            <section id="guide" class="content-section">
+                <div class="header">
+                    <h1>Step-by-Step Guide</h1>
+                    <p>Your comprehensive guide to participating in the election process.</p>
+                </div>
+
+                <div class="guide-container">
+                    <div class="accordion">
+                        <div class="accordion-item">
+                            <button class="accordion-header">
+                                <span class="step-num">1</span>
+                                Check Your Eligibility
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content">
+                                <p>Before registering, ensure you meet the eligibility requirements:</p>
+                                <ul>
+                                    <li>Be a U.S. citizen.</li>
+                                    <li>Meet your state's residency requirements.</li>
+                                    <li>Be 18 years old on or before Election Day.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <button class="accordion-header">
+                                <span class="step-num">2</span>
+                                Register to Vote
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content">
+                                <p>You can register to vote in several ways:</p>
+                                <ul>
+                                    <li><strong>Online:</strong> Visit your state's election website.</li>
+                                    <li><strong>By Mail:</strong> Download and mail a National Mail Voter Registration Form.</li>
+                                    <li><strong>In Person:</strong> At your local election office, DMV, or armed forces recruitment centers.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <button class="accordion-header">
+                                <span class="step-num">3</span>
+                                Decide How to Vote
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content">
+                                <p>Choose the voting method that works best for you:</p>
+                                <div class="methods-grid">
+                                    <div class="method-card">
+                                        <i class="fa-solid fa-envelope"></i>
+                                        <h4>Mail-in Voting</h4>
+                                        <p>Request an absentee or mail-in ballot ahead of time.</p>
+                                    </div>
+                                    <div class="method-card">
+                                        <i class="fa-solid fa-person-walking"></i>
+                                        <h4>Early Voting</h4>
+                                        <p>Vote in person before Election Day to avoid long lines.</p>
+                                    </div>
+                                    <div class="method-card">
+                                        <i class="fa-solid fa-calendar-check"></i>
+                                        <h4>Election Day</h4>
+                                        <p>Vote in person at your designated polling place.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <button class="accordion-header">
+                                <span class="step-num">4</span>
+                                Research the Candidates
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="accordion-content">
+                                <p>Learn about who is on your ballot. You can find sample ballots on your local election office website or non-partisan resources to compare candidate stances.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

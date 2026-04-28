@@ -1,105 +1,169 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 
-// Rate limiting (simple memory cache for demo purposes)
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface HistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// ---------------------------------------------------------------------------
+// Rate-limiting (in-memory, per-IP, resets every WINDOW_MS)
+// ---------------------------------------------------------------------------
 const ipCache = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT = 20; // max requests per minute
-const WINDOW_MS = 60 * 1000;
+const RATE_LIMIT = 20; // max requests per minute per IP
+const WINDOW_MS = 60 * 1_000;
 
-export async function POST(req: Request) {
-  try {
-    const ip = req.headers.get('x-forwarded-for') || 'anonymous';
-    const now = Date.now();
-    const limit = ipCache.get(ip);
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipCache.get(ip);
 
-    if (!limit || now - limit.lastReset > WINDOW_MS) {
-      ipCache.set(ip, { count: 1, lastReset: now });
-    } else {
-      if (limit.count >= RATE_LIMIT) {
-        return NextResponse.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
-      }
-      limit.count += 1;
-    }
+  if (!entry || now - entry.lastReset > WINDOW_MS) {
+    ipCache.set(ip, { count: 1, lastReset: now });
+    return true;
+  }
 
-    const body = await req.json();
-    const { message, history = [] } = body;
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count += 1;
+  return true;
+}
 
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
-    }
+// ---------------------------------------------------------------------------
+// Input sanitisation — strip leading/trailing whitespace and enforce length
+// ---------------------------------------------------------------------------
+const MAX_MESSAGE_LENGTH = 2_000;
 
-    // Default to a fallback if GEMINI_API_KEY is missing
-    if (!process.env.GEMINI_API_KEY) {
-      console.warn('GEMINI_API_KEY missing, using mock response');
-      return NextResponse.json({ reply: "This is a mock response. Please add GEMINI_API_KEY to your environment variables." });
-    }
+function sanitise(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_MESSAGE_LENGTH) return null;
+  return trimmed;
+}
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-    const systemPrompt = `You are an official, highly accurate educational guide for the Indian Election Commission (ECI). Your primary mandate is to provide step-by-step guidance on voter registration, EVM/VVPAT mechanics, polling logistics, and comprehensive electoral data based solely on official protocols and verified records. You must use simple, accessible language. Absolutely do not invent dates, rules, or data.
+// ---------------------------------------------------------------------------
+// System prompt
+// ---------------------------------------------------------------------------
+const SYSTEM_PROMPT = `You are an official, highly accurate educational guide for the Indian Election Commission (ECI). Your primary mandate is to provide step-by-step guidance on voter registration, EVM/VVPAT mechanics, polling logistics, and comprehensive electoral data based solely on official protocols and verified records. Use simple, accessible language. Absolutely do not invent dates, rules, or data.
 
 NEW CAPABILITY & SCOPE INSTRUCTIONS:
 
-Comprehensive Electoral Data: You are authorized and equipped to provide detailed information on all elections conducted in India (including Lok Sabha, State Legislative Assemblies, Rajya Sabha, and officially documented local body elections). This includes fetching upcoming election schedules, voter registration deadlines, candidate lists, constituency demographics, and verified historical election results up to your present knowledge cutoff.
+Comprehensive Electoral Data: You are authorised and equipped to provide detailed information on all elections conducted in India (Lok Sabha, State Legislative Assemblies, Rajya Sabha, and officially documented local body elections). This includes upcoming election schedules, voter registration deadlines, candidate lists, constituency demographics, and verified historical election results up to your present knowledge cutoff.
 
-Dynamic Clarification Engine: You must be interactive and dynamic. If a user's query is broad, ambiguous, or lacks necessary parameters (e.g., asking "Who won the election?"), you MUST ask targeted clarifying questions before providing a response to ensure precision. Examples of clarifying questions include:
+Dynamic Clarification Engine: If a user's query is broad or ambiguous (e.g. "Who won the election?"), you MUST ask targeted clarifying questions before answering:
+- "Are you inquiring about Lok Sabha or State Assembly elections?"
+- "Which state, constituency, or year are you looking for?"
+- "Are you registering as a new voter or updating existing details?"
 
-"Are you inquiring about the Lok Sabha (General) elections or State Assembly elections?"
-
-"Which specific state, constituency, or election year are you looking for?"
-
-"Are you looking to register as a new voter, or update existing details?"
-
-Context Retention: The user will likely provide their State or constituency at the beginning of the conversation. You must explicitly remember this location for all subsequent answers to logically tailor your guidance and data retrieval.
+Context Retention: Remember the user's state or constituency for all subsequent answers.
 
 CRITICAL FORMATTING INSTRUCTIONS:
+- Structure responses using proper Markdown.
+- Use **bold** for key terms, deadlines, and figures.
+- Use numbered lists for step-by-step procedures.
+- Use bullet points for document requirements or candidate names.
+- Add ### headings to separate sections.
+- Leave blank lines between paragraphs for readability.
 
-You MUST structure your responses using proper Markdown format.
-
-Always use bold text for important terms, deadlines, and key figures.
-
-Use numbered lists (1., 2., 3.) for step-by-step procedures (e.g., registering via the Voter Portal).
-
-Use bullet points (- ) for listing items, document requirements, or candidate names.
-
-Add clear headings (###) to logically separate different parts of your answer.
-
-Ensure there is a blank line between paragraphs and list items for maximum readability.
-
-BOUNDARY CONDITIONS & GUARDRAILS:
-
-If a user query falls outside the official knowledge base (e.g., asking for personal opinions on political policies, subjective analysis of party manifestos, or non-electoral governance), you MUST reply verbatim with:
+BOUNDARY CONDITIONS:
+If a query falls outside official electoral knowledge (e.g. opinions on party manifestos), reply:
 "I am an educational assistant focused exclusively on election procedures. For information outside this scope, or for definitive legal rulings, please refer directly to the Election Commission of India website at eci.gov.in."
+Do not predict future election outcomes or endorse/criticise any political party or candidate.`;
 
-You are strictly prohibited from predicting future election outcomes, analyzing political momentum, or endorsing/criticizing any political parties or candidates.`;
+// ---------------------------------------------------------------------------
+// Route handler
+// ---------------------------------------------------------------------------
+export async function POST(req: Request) {
+  try {
+    // --- Rate limit ---
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'anonymous';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again in a minute.' },
+        { status: 429 }
+      );
+    }
 
+    // --- Parse & validate body ---
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
+    }
+
+    const { message: rawMessage, history: rawHistory = [] } = body as {
+      message?: unknown;
+      history?: unknown[];
+    };
+
+    const message = sanitise(rawMessage);
+    if (!message) {
+      return NextResponse.json(
+        { error: `Message is required and must be 1–${MAX_MESSAGE_LENGTH} characters.` },
+        { status: 400 }
+      );
+    }
+
+    // --- API key check ---
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn('GEMINI_API_KEY is not set');
+      return NextResponse.json(
+        { error: 'Service configuration error. Please contact the administrator.' },
+        { status: 503 }
+      );
+    }
+
+    // --- Build sanitised chat history ---
+    const history = (Array.isArray(rawHistory) ? rawHistory : [])
+      .filter(
+        (m): m is HistoryMessage =>
+          m !== null &&
+          typeof m === 'object' &&
+          typeof (m as HistoryMessage).content === 'string' &&
+          (m as HistoryMessage).content.trim() !== '' &&
+          ((m as HistoryMessage).role === 'user' || (m as HistoryMessage).role === 'assistant')
+      )
+      .map((m: HistoryMessage) => ({
+        role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+        parts: [{ text: m.content.trim() }],
+      }));
+
+    // --- Call Gemini ---
+    const ai = new GoogleGenAI({ apiKey });
     const chat = ai.chats.create({
       model: 'gemini-2.5-flash',
       config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.2, // Low temperature for factual responses
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.2,
       },
-      history: history
-        .filter((msg: any) => msg.content && msg.content.trim() !== '')
-        .map((msg: any) => ({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: String(msg.content) }]
-        }))
+      history,
     });
 
-    // We pass the new message to sendMessage
     const response = await chat.sendMessage({ message });
     return NextResponse.json({ reply: response.text });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat API Error:', error);
-    const message = error?.message || 'Unknown error';
-    // Surface a user-friendly but diagnostic message
-    if (message.includes('API_KEY') || message.includes('API key') || message.includes('credential')) {
-      return NextResponse.json({ error: 'API key error: Please check your GEMINI_API_KEY in Vercel environment variables.' }, { status: 500 });
+
+    const msg = error instanceof Error ? error.message : String(error);
+
+    if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
+      return NextResponse.json(
+        { error: 'The AI service quota has been exceeded. Please try again later.' },
+        { status: 429 }
+      );
     }
-    if (message.includes('quota') || message.includes('RESOURCE_EXHAUSTED')) {
-      return NextResponse.json({ error: 'The Gemini API quota has been exceeded. Please try again later.' }, { status: 429 });
-    }
-    return NextResponse.json({ error: `Request failed: ${message}` }, { status: 500 });
+
+    // Do NOT expose raw internal error details to clients
+    return NextResponse.json(
+      { error: 'An error occurred processing your request. Please try again.' },
+      { status: 500 }
+    );
   }
 }

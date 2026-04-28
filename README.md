@@ -2,6 +2,8 @@
 
 An interactive and easy-to-follow educational assistant that guides users through the various stages, timelines, and requirements of the election process.
 
+**Live Application:** [https://election-assistant-653411741824.us-central1.run.app](https://election-assistant-653411741824.us-central1.run.app)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
